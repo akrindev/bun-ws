@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Library App</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <style>
+      body {
+        background-color: #f8f9fa;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      }
+      .fade-enter-active,
+      .fade-leave-active {
+        transition: opacity 0.5s;
+      }
+      .fade-enter-from,
+      .fade-leave-to {
+        opacity: 0;
+      }
+      .card {
+        border: none;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+      }
+      .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+      }
+      .btn {
+        border-radius: 20px;
+        padding: 8px 20px;
+        transition: all 0.3s ease;
+      }
+      .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      }
+      .list-group-item {
+        border: none;
+        margin-bottom: 10px;
+        border-radius: 10px !important;
+        transition: all 0.3s ease;
+      }
+      .list-group-item:hover {
+        background-color: #f1f3f5;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app" class="py-5 container">
+      <h1 class="mb-5 text-center display-4">
+        <i class="fa-book-open fas me-3"></i>Library App
+      </h1>
+      <div class="g-4 row">
+        <div class="col-md-4">
+          <div class="h-100 card">
+            <div class="bg-primary py-3 text-white card-header">
+              <h5 class="mb-0 card-title">
+                <i
+                  class="fas"
+                  :class="isEditing ? 'fa-edit' : 'fa-plus-circle'"
+                ></i>
+                {{ isEditing ? 'Edit Book' : 'Add New Book' }}
+              </h5>
+            </div>
+            <div class="card-body">
+              <form @submit.prevent="isEditing ? updateBook() : addBook()">
+                <div class="mb-3">
+                  <label for="title" class="form-label">Title</label>
+                  <input
+                    type="text"
+                    id="title"
+                    v-model="currentBook.title"
+                    class="form-control"
+                    required
+                  />
+                </div>
+                <div class="mb-3">
+                  <label for="author" class="form-label">Author</label>
+                  <input
+                    type="text"
+                    id="author"
+                    v-model="currentBook.author"
+                    class="form-control"
+                    required
+                  />
+                </div>
+                <div class="mb-3">
+                  <label for="year" class="form-label">Published Year</label>
+                  <input
+                    type="number"
+                    id="year"
+                    v-model="currentBook.published_year"
+                    class="form-control"
+                    required
+                  />
+                </div>
+                <button
+                  type="submit"
+                  class="w-100 btn"
+                  :class="isEditing ? 'btn-warning' : 'btn-primary'"
+                >
+                  <i class="fas" :class="isEditing ? 'fa-save' : 'fa-plus'"></i>
+                  {{ isEditing ? 'Update Book' : 'Add Book' }}
+                </button>
+                <button
+                  v-if="isEditing"
+                  @click="cancelEdit"
+                  class="mt-2 w-100 btn btn-secondary"
+                >
+                  <i class="fa-times fas"></i> Cancel
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-8">
+          <div class="h-100 card">
+            <div class="bg-success py-3 text-white card-header">
+              <h5 class="mb-0 card-title">
+                <i class="fa-list fas me-2"></i>Books List
+              </h5>
+            </div>
+            <div class="card-body">
+              <transition-group name="fade">
+                <div
+                  v-for="(notif, index) in notifications"
+                  :key="index"
+                  class="alert alert-dismissible alert-info fade show"
+                  role="alert"
+                >
+                  {{ notif }}
+                  <button
+                    type="button"
+                    class="btn-close"
+                    @click="removeNotification(index)"
+                    aria-label="Close"
+                  ></button>
+                </div>
+              </transition-group>
+              <ul class="list-group">
+                <li
+                  v-for="book in sortedBooks"
+                  :key="book.id"
+                  class="d-flex justify-content-between align-items-center bg-light list-group-item"
+                >
+                  <div>
+                    <strong>{{ book.title }}</strong>
+                    <br />
+                    <small class="text-muted"
+                      >by {{ book.author }} ({{ book.published_year }})</small
+                    >
+                  </div>
+                  <div>
+                    <button
+                      @click="editBook(book)"
+                      class="btn btn-sm btn-warning me-2"
+                    >
+                      <i class="fa-edit fas"></i> Edit
+                    </button>
+                    <button
+                      @click="confirmDelete(book.id)"
+                      class="btn btn-danger btn-sm"
+                    >
+                      <i class="fa-trash fas"></i> Delete
+                    </button>
+                  </div>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Delete Confirmation Modal -->
+      <div
+        class="fade modal"
+        id="deleteConfirmModal"
+        tabindex="-1"
+        aria-labelledby="deleteConfirmModalLabel"
+        aria-hidden="true"
+      >
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="bg-danger text-white modal-header">
+              <h5 class="modal-title" id="deleteConfirmModalLabel">
+                <i class="fa-exclamation-triangle fas me-2"></i>Confirm Deletion
+              </h5>
+              <button
+                type="button"
+                class="btn-close btn-close-white"
+                data-bs-dismiss="modal"
+                aria-label="Close"
+              ></button>
+            </div>
+            <div class="modal-body">
+              <p>
+                Are you sure you want to delete this book? This action cannot be
+                undone.
+              </p>
+            </div>
+            <div class="modal-footer">
+              <button
+                type="button"
+                class="btn btn-secondary"
+                data-bs-dismiss="modal"
+              >
+                <i class="fa-times fas me-2"></i>Cancel
+              </button>
+              <button type="button" class="btn btn-danger" @click="deleteBook">
+                <i class="fa-trash fas me-2"></i>Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <audio id="notificationSound">
+      <source
+        src="https://assets.mixkit.co/active_storage/sfx/951/951.wav"
+        type="audio/mpeg"
+      />
+      Your browser does not support the audio element.
+    </audio>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

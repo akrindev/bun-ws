@@ -1,0 +1,15 @@
+{
+  "dependencies": {
+    "hono": "^4.6.3",
+    "vue": "^3.5.11"
+  },
+  "name": "tugas-e-perpus",
+  "module": "server.ts",
+  "type": "module",
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  }
+}
