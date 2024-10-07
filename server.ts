@@ -99,27 +99,26 @@ app.delete("/books/:id", (c) => {
 
 // Menjalankan server aplikasi
 const port = 3000;
-const server = serve({
-  port: 3000,
-  fetch(req) {
+export default {
+  port: process.env.PORT || 3000,
+  async fetch(req: Request) {
     const url = new URL(req.url);
     const path = url.pathname;
 
     if (path === "/") {
-      return new Response(Bun.file("index.html"));
+      return new Response(await Bun.file("index.html").text(), {
+        headers: { "Content-Type": "text/html" },
+      });
     }
 
     if (path === "/app.js") {
-      // Change this to serve app.js instead of app.ts
-      return new Response(Bun.file("app.js"), {
-        headers: {
-          "Content-Type": "application/javascript",
-        },
+      return new Response(await Bun.file("app.js").text(), {
+        headers: { "Content-Type": "application/javascript" },
       });
     }
 
     return app.fetch(req);
   },
-});
+};
 
-console.log(`Listening on http://localhost:${server.port}`);
+console.log(`Server ready to handle requests`);
