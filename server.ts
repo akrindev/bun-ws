@@ -18,14 +18,15 @@ db.run(`
   )
 `);
 
-// Inisialisasi WebSocket
-const wss = new WebSocketServer({
-  port: 3001,
-});
+let wss: WebSocketServer;
 
-wss.on("connection", (ws) => {
-  ws.send("Welcome to the library notification system!");
-});
+function initializeWebSocket(server: any) {
+  wss = new WebSocketServer({ server });
+
+  wss.on("connection", (ws) => {
+    ws.send("Welcome to the library notification system!");
+  });
+}
 
 // Fungsi untuk notifikasi ke semua klien WebSocket
 function notifyClients(message: string) {
@@ -120,5 +121,7 @@ export default {
     return app.fetch(req);
   },
 };
+
+initializeWebSocket(serve({ fetch: app.fetch }));
 
 console.log(`Server ready to handle requests`);

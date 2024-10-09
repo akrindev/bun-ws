@@ -1,0 +1,60 @@
+name: Deploy to Google Cloud Run
+
+on:
+  push:
+    branches:
+      - "*"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Run tests
+        run: bun test
+
+      - id: "auth"
+        uses: "google-github-actions/auth@v2"
+        with:
+          credentials_json: "${{ secrets.GCP_SA_KEY }}"
+
+      - name: Setup Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+      - name: Authorize Docker push
+        run: gcloud auth configure-docker
+
+      - name: Build and push Docker image
+        env:
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          SERVICE_NAME: ${{ secrets.SERVICE_NAME }}
+        run: |
+          docker build -t gcr.io/$GCP_PROJECT_ID/$SERVICE_NAME:$GITHUB_SHA .
+          docker push gcr.io/$GCP_PROJECT_ID/$SERVICE_NAME:$GITHUB_SHA
+
+      - name: Deploy to Cloud Run
+        env:
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          SERVICE_NAME: ${{ secrets.SERVICE_NAME }}
+          GCP_REGION: ${{ secrets.GCP_REGION }}
+        run: |
+          gcloud run deploy $SERVICE_NAME \
+            --image gcr.io/$GCP_PROJECT_ID/$SERVICE_NAME:$GITHUB_SHA \
+            --platform managed \
+            --region $GCP_REGION \
+            --allow-unauthenticated \
+            --use-http2 \
