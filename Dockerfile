@@ -38,7 +38,7 @@ COPY --from=prerelease /usr/src/app/package.json .
 # USER bun
 # EXPOSE 3000/tcp
 
-ENV PORT=3000
+# ENV PORT=3000
 EXPOSE 3000
 
 ENTRYPOINT [ "bun", "run", "server.ts" ]
